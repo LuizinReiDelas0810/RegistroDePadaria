@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Padaria Hub - Analytics</title>
+    
+    <link rel="icon" type="image/png" href="Design sem nome.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --on-primary: #ffffff;
+            --bg: #fdfdfd;
+            --surface: #ffffff;
+            --text-main: #1a1c1e;
+            --text-sub: #74777f;
+            --border: #e1e2e9;
+            --danger: #ba1a1a;
+            --radius: 20px;
+        }
+
+        [data-theme="dark"] {
+            --bg: #1a1c1e;
+            --surface: #2d2e31;
+            --text-main: #e2e2e6;
+            --text-sub: #909094;
+            --border: #44474e;
+            --primary: #1a73e8; 
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-container {
+            overflow: hidden; 
+            border-radius: 12px; 
+            width: 45px; 
+            height: 45px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* Scale para esconder a borda preta interna da imagem original */
+            transform: scale(1.15); 
+        }
+
+        header h1 { font-size: 20px; font-weight: 700; margin: 0; letter-spacing: -0.5px; color: var(--primary); }
+
+        main { width: 100%; max-width: 600px; padding: 0 20px 100px; }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input {
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            background: var(--bg);
+            color: var(--text-main);
+            font-size: 16px;
+            border: 1px solid var(--border);
+            outline: none;
+        }
+
+        .btn-main {
+            width: 100%;
+            background-color: #1a73e8 !important;
+            color: #ffffff !important;
+            border: none;
+            padding: 18px;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn-delete-alt {
+            width: 100%;
+            background: rgba(186, 26, 26, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(186, 26, 26, 0.2);
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        .btn-cancel-alt {
+            width: 100%;
+            background: transparent;
+            color: var(--text-sub);
+            border: 1px solid var(--border);
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 500;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        .item-log {
+            background: var(--surface);
+            padding: 18px;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+        }
+
+        .item-info b { font-size: 16px; display: block; text-transform: capitalize; }
+        .item-info span { font-size: 13px; color: var(--text-sub); }
+
+        .badge { font-size: 14px; font-weight: 700; padding: 8px 16px; border-radius: 12px; }
+        .badge-pos { background: rgba(0, 109, 59, 0.15); color: #008f4c; }
+        .badge-neg { background: rgba(186, 26, 26, 0.15); color: #ff5449; }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .modal {
+            background: var(--surface);
+            border-radius: 28px;
+            padding: 32px;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--border);
+        }
+
+        .btn-no { background: var(--danger); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 600; cursor: pointer; width: 100%; }
+        .btn-yes { background: transparent; color: var(--danger); border: 2px solid var(--danger); padding: 16px; border-radius: 14px; font-weight: 600; cursor: pointer; width: 100%; }
+
+        .theme-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 8px;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+<header>
+    <div class="logo-box">
+        <div class="logo-container">
+            <img src="Design sem nome.png" alt="Logo Padaria Hub" class="logo-img">
+        </div>
+        <h1>Padaria Hub</h1>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()">🌓</button>
+</header>
+
+<main>
+    <div class="card">
+        <div class="section-title">Novo Lançamento</div>
+        <input type="text" id="nome_prod" placeholder="Produto">
+        <div style="display:flex; gap:12px;">
+            <input type="number" id="qtd_prod" placeholder="Fez">
+            <input type="number" id="qtd_vend" placeholder="Saiu">
+        </div>
+        <button class="btn-main" onclick="salvar()">Registrar</button>
+    </div>
+
+    <div class="card" id="card-stats" style="display:none;">
+        <div class="section-title">Desempenho por Item</div>
+        <div class="chart-container">
+            <canvas id="meuGrafico"></canvas>
+        </div>
+        <div id="rank-text" style="font-size: 12px; color: var(--text-sub); text-align: center; margin-top: 10px;"></div>
+    </div>
+
+    <input type="text" id="busca" placeholder="Filtrar histórico..." oninput="renderizar()" style="position: sticky; top: 10px; z-index: 10;">
+    
+    <div id="lista_hist"></div>
+</main>
+
+<div class="overlay" id="overlayEdit">
+    <div class="modal">
+        <div class="section-title">Editar</div>
+        <input type="hidden" id="edit_id">
+        <input type="text" id="edit_nome">
+        <div style="display:flex; gap:10px;">
+            <input type="number" id="edit_prod">
+            <input type="number" id="edit_vend">
+        </div>
+        <button class="btn-main" onclick="confirmarEdicao()">Salvar</button>
+        <button class="btn-delete-alt" onclick="abrirConfirmacao()">🗑️ Excluir Registro</button>
+        <button class="btn-cancel-alt" onclick="fecharModais()">Cancelar</button>
+    </div>
+</div>
+
+<div class="overlay" id="overlayConfirm" style="z-index:3000;">
+    <div class="modal">
+        <h3 style="text-align:center;">Tem certeza?</h3>
+        <div style="display:flex; flex-direction:column; gap:12px; margin-top:25px;">
+            <button class="btn-yes" onclick="deletarDeVez()">SIM</button>
+            <button class="btn-no" onclick="fecharModais()">NÃO</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const KEY = 'padaria_hub_v2';
+    let chartInstance = null;
+
+    window.onload = () => { carregarTema(); renderizar(); };
+
+    function salvar() {
+        const nome = document.getElementById('nome_prod').value;
+        const prod = parseInt(document.getElementById('qtd_prod').value);
+        const vend = parseInt(document.getElementById('qtd_vend').value) || 0;
+        if(!nome || isNaN(prod)) return;
+
+        const registro = { id: Date.now(), nome: nome.toLowerCase(), prod, vend, data: new Date().toISOString() };
+        let lista = JSON.parse(localStorage.getItem(KEY) || '[]');
+        lista.push(registro);
+        localStorage.setItem(KEY, JSON.stringify(lista));
+        
+        document.getElementById('nome_prod').value = '';
+        document.getElementById('qtd_prod').value = '';
+        document.getElementById('qtd_vend').value = '';
+        renderizar();
+    }
+
+    function renderizar() {
+        const listaDiv = document.getElementById('lista_hist');
+        const termo = document.getElementById('busca').value.toLowerCase();
+        let lista = JSON.parse(localStorage.getItem(KEY) || '[]');
+        
+        listaDiv.innerHTML = '';
+        atualizarGraficos(lista);
+
+        lista.slice().reverse().filter(i => i.nome.includes(termo)).forEach((item) => {
+            const sobra = item.prod - item.vend;
+            const dataF = new Date(item.data).toLocaleDateString('pt-BR', {day:'2-digit', month:'short'});
+            
+            const div = document.createElement('div');
+            div.className = 'item-log';
+            div.onclick = () => abrirEdicao(item);
+            div.innerHTML = `
+                <div class="item-info">
+                    <span>${dataF}</span>
+                    <b>${item.nome}</b>
+                </div>
+                <div class="badge ${sobra >= 0 ? 'badge-pos' : 'badge-neg'}">
+                    ${sobra >= 0 ? '+' + sobra : sobra}
+                </div>`;
+            listaDiv.appendChild(div);
+        });
+    }
+
+    function atualizarGraficos(lista) {
+        if (lista.length === 0) {
+            document.getElementById('card-stats').style.display = 'none';
+            return;
+        }
+        document.getElementById('card-stats').style.display = 'block';
+
+        const resumo = {};
+        lista.forEach(item => {
+            if (!resumo[item.nome]) resumo[item.nome] = { nome: item.nome, vend: 0 };
+            resumo[item.nome].vend += item.vend;
+        });
+
+        const dadosOrdenados = Object.values(resumo).sort((a, b) => b.vend - a.vend);
+        const labels = dadosOrdenados.map(i => i.nome);
+        const valores = dadosOrdenados.map(i => i.vend);
+
+        const maisVendido = dadosOrdenados[0].nome;
+        const menosVendido = dadosOrdenados[dadosOrdenados.length - 1].nome;
+        document.getElementById('rank-text').innerHTML = `🏆 <b>${maisVendido}</b> é o campeão | 📉 <b>${menosVendido}</b> vendeu menos`;
+
+        const ctx = document.getElementById('meuGrafico').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total de Vendas',
+                    data: valores,
+                    backgroundColor: '#1a73e8',
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function abrirEdicao(item) {
+        document.getElementById('edit_id').value = item.id;
+        document.getElementById('edit_nome').value = item.nome;
+        document.getElementById('edit_prod').value = item.prod;
+        document.getElementById('edit_vend').value = item.vend;
+        document.getElementById('overlayEdit').style.display = 'flex';
+    }
+
+    function confirmarEdicao() {
+        const id = parseInt(document.getElementById('edit_id').value);
+        let lista = JSON.parse(localStorage.getItem(KEY) || '[]');
+        const i = lista.findIndex(x => x.id === id);
+        lista[i].nome = document.getElementById('edit_nome').value.toLowerCase();
+        lista[i].prod = parseInt(document.getElementById('edit_prod').value);
+        lista[i].vend = parseInt(document.getElementById('edit_vend').value);
+        localStorage.setItem(KEY, JSON.stringify(lista));
+        fecharModais();
+        renderizar();
+    }
+
+    function abrirConfirmacao() { document.getElementById('overlayConfirm').style.display = 'flex'; }
+    function fecharModais() { 
+        document.getElementById('overlayEdit').style.display = 'none'; 
+        document.getElementById('overlayConfirm').style.display = 'none'; 
+    }
+
+    function deletarDeVez() {
+        const id = parseInt(document.getElementById('edit_id').value);
+        let lista = JSON.parse(localStorage.getItem(KEY) || '[]');
+        lista = lista.filter(x => x.id !== id);
+        localStorage.setItem(KEY, JSON.stringify(lista));
+        fecharModais();
+        renderizar();
+    }
+
+    function toggleTheme() {
+        const t = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', t);
+        localStorage.setItem('hub_theme', t);
+    }
+
+    function carregarTema() {
+        const saved = localStorage.getItem('hub_theme') || 'light';
+        document.body.setAttribute('data-theme', saved);
+    }
+</script>
+</body>
+</html>
